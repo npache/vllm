@@ -9,6 +9,10 @@ of measurements.
 """
 
 from enum import Enum
+from typing import Literal
+
+# Type alias for histogram profile names
+HistogramProfile = Literal["standard"]
 
 
 class BucketType(str, Enum):
@@ -283,3 +287,35 @@ METRIC_BUCKET_MAPPING: dict[str, BucketType] = {
     # COMPLETION_COUNT metrics
     "vllm:request_params_n": BucketType.COMPLETION_COUNT,
 }
+
+
+# Histogram bucket profiles
+# Each profile provides a complete set of bucket definitions optimized
+# for different use cases
+BUCKET_PROFILES: dict[HistogramProfile, dict[BucketType, tuple[float, ...]]] = {
+    "standard": DEFAULT_BUCKETS,
+}
+
+
+def get_profile_buckets(
+    profile: HistogramProfile = "standard",
+) -> dict[BucketType, tuple[float, ...]]:
+    """
+    Get all bucket definitions for a given profile.
+
+    Args:
+        profile: The histogram profile name.
+
+    Returns:
+        Dictionary mapping bucket types to their values for the profile.
+
+    Raises:
+        ValueError: If the profile name is not recognized.
+    """
+    if profile not in BUCKET_PROFILES:
+        valid_profiles = list(BUCKET_PROFILES.keys())
+        raise ValueError(
+            f"Unknown histogram profile: '{profile}'. "
+            f"Available profiles: {valid_profiles}"
+        )
+    return BUCKET_PROFILES[profile]
