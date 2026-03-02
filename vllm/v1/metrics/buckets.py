@@ -11,7 +11,7 @@ of measurements.
 from enum import Enum
 from typing import Literal
 
-HistogramProfile = Literal["standard"]
+HistogramProfile = Literal["standard", "low-latency", "high-throughput", "batch"]
 
 
 class BucketType(str, Enum):
@@ -288,11 +288,212 @@ METRIC_BUCKET_MAPPING: dict[str, BucketType] = {
 }
 
 
+# Low-latency profile: Finer granularity at sub-100ms levels for real-time apps
+# Optimized for chatbots, streaming, and interactive applications
+LOW_LATENCY_BUCKETS: dict[BucketType, tuple[float, ...]] = {
+    # Finer granularity in 5-100ms range for fast token generation
+    BucketType.TOKEN_STEP_LATENCY: (
+        0.005,
+        0.01,
+        0.015,
+        0.02,
+        0.025,
+        0.03,
+        0.04,
+        0.05,
+        0.075,
+        0.1,
+        0.15,
+        0.2,
+        0.3,
+        0.5,
+        1.0,
+        2.0,
+        5.0,
+    ),
+    # Very fine sub-100ms granularity for TTFT
+    BucketType.PREFILL_LATENCY: (
+        0.001,
+        0.002,
+        0.005,
+        0.01,
+        0.015,
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.08,
+        0.1,
+        0.15,
+        0.2,
+        0.3,
+        0.5,
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+    ),
+    # Shorter range for interactive requests
+    BucketType.ACCUMULATED_PHASE_LATENCY: (
+        0.1,
+        0.2,
+        0.3,
+        0.5,
+        0.8,
+        1.0,
+        1.5,
+        2.0,
+        3.0,
+        5.0,
+        10.0,
+        15.0,
+        20.0,
+        30.0,
+        60.0,
+        120.0,
+    ),
+    BucketType.CACHE_RESIDENCY: DEFAULT_BUCKETS[BucketType.CACHE_RESIDENCY],
+    BucketType.BATCH_SIZE: DEFAULT_BUCKETS[BucketType.BATCH_SIZE],
+    BucketType.COMPLETION_COUNT: DEFAULT_BUCKETS[BucketType.COMPLETION_COUNT],
+}
+
+# High-throughput profile: Coarser buckets, higher upper bounds
+# Optimized for batch inference with many concurrent requests
+HIGH_THROUGHPUT_BUCKETS: dict[BucketType, tuple[float, ...]] = {
+    # Coarser granularity, higher upper bound
+    BucketType.TOKEN_STEP_LATENCY: (
+        0.025,
+        0.05,
+        0.1,
+        0.2,
+        0.5,
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+        30.0,
+        60.0,
+        120.0,
+    ),
+    # Extended range for queued requests
+    BucketType.PREFILL_LATENCY: (
+        0.01,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.5,
+        5.0,
+        10.0,
+        30.0,
+        60.0,
+        120.0,
+        300.0,
+        600.0,
+    ),
+    # Extended range for high-throughput scenarios
+    BucketType.ACCUMULATED_PHASE_LATENCY: (
+        0.5,
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+        30.0,
+        60.0,
+        120.0,
+        300.0,
+        600.0,
+        1200.0,
+        1800.0,
+        3600.0,
+    ),
+    BucketType.CACHE_RESIDENCY: DEFAULT_BUCKETS[BucketType.CACHE_RESIDENCY],
+    # Extended batch sizes for high throughput
+    BucketType.BATCH_SIZE: (
+        1,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768,
+    ),
+    BucketType.COMPLETION_COUNT: DEFAULT_BUCKETS[BucketType.COMPLETION_COUNT],
+}
+
+# Batch profile: Very high latency tolerances for offline processing
+# Optimized for offline batch jobs where latency is not critical
+BATCH_BUCKETS: dict[BucketType, tuple[float, ...]] = {
+    # Very coarse, focused on completion not latency
+    BucketType.TOKEN_STEP_LATENCY: (
+        0.1,
+        0.5,
+        1.0,
+        5.0,
+        10.0,
+        30.0,
+        60.0,
+        300.0,
+    ),
+    # Extended range for batch prefill
+    BucketType.PREFILL_LATENCY: (
+        0.1,
+        0.5,
+        1.0,
+        5.0,
+        10.0,
+        60.0,
+        300.0,
+        600.0,
+        1800.0,
+        3600.0,
+    ),
+    # Very extended range for batch processing (up to hours)
+    BucketType.ACCUMULATED_PHASE_LATENCY: (
+        1.0,
+        5.0,
+        10.0,
+        60.0,
+        300.0,
+        600.0,
+        1800.0,
+        3600.0,
+        7200.0,
+        14400.0,
+    ),
+    # Extended cache residency for batch
+    BucketType.CACHE_RESIDENCY: (
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        60.0,
+        300.0,
+        600.0,
+        1800.0,
+        3600.0,
+    ),
+    BucketType.BATCH_SIZE: HIGH_THROUGHPUT_BUCKETS[BucketType.BATCH_SIZE],
+    BucketType.COMPLETION_COUNT: DEFAULT_BUCKETS[BucketType.COMPLETION_COUNT],
+}
+
+
 # Histogram bucket profiles
 # Each profile provides a complete set of bucket definitions optimized
 # for different use cases
 BUCKET_PROFILES: dict[HistogramProfile, dict[BucketType, tuple[float, ...]]] = {
     "standard": DEFAULT_BUCKETS,
+    "low-latency": LOW_LATENCY_BUCKETS,
+    "high-throughput": HIGH_THROUGHPUT_BUCKETS,
+    "batch": BATCH_BUCKETS,
 }
 
 
