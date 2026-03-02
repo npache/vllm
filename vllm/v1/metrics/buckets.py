@@ -516,3 +516,66 @@ def get_profile_buckets(
             f"Available profiles: {valid_profiles}"
         )
     return BUCKET_PROFILES[profile]
+
+
+def validate_custom_buckets(
+    custom: dict[str, list[float]],
+) -> dict[BucketType, tuple[float, ...]]:
+    """
+    Validate and convert custom bucket JSON to internal format.
+
+    Args:
+        custom: Dictionary mapping bucket type names to bucket values.
+
+    Returns:
+        Dictionary mapping BucketType enums to validated bucket tuples.
+
+    Raises:
+        ValueError: If bucket type is invalid, values are not sorted,
+                   not positive, or empty.
+    """
+    result: dict[BucketType, tuple[float, ...]] = {}
+    valid_types = {bt.value: bt for bt in BucketType}
+
+    for type_name, values in custom.items():
+        if type_name not in valid_types:
+            raise ValueError(
+                f"Invalid bucket type: '{type_name}'. "
+                f"Valid types: {list(valid_types.keys())}"
+            )
+
+        if not values:
+            raise ValueError(f"Bucket values for '{type_name}' cannot be empty")
+
+        if not all(v > 0 for v in values):
+            raise ValueError(f"All bucket values for '{type_name}' must be positive")
+
+        sorted_values = tuple(sorted(values))
+        if tuple(values) != sorted_values:
+            raise ValueError(f"Bucket values for '{type_name}' must be sorted")
+
+        result[valid_types[type_name]] = sorted_values
+
+    return result
+
+
+def merge_custom_buckets(
+    profile: HistogramProfile,
+    custom_overrides: dict[BucketType, tuple[float, ...]] | None = None,
+) -> dict[BucketType, tuple[float, ...]]:
+    """
+    Merge custom bucket overrides with a base profile.
+
+    Args:
+        profile: Base histogram profile name.
+        custom_overrides: Optional custom bucket overrides to apply.
+
+    Returns:
+        Complete bucket dictionary with custom overrides applied.
+    """
+    base_buckets = get_profile_buckets(profile).copy()
+
+    if custom_overrides:
+        base_buckets.update(custom_overrides)
+
+    return base_buckets
