@@ -2,7 +2,10 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 
 from functools import cached_property
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from vllm.v1.metrics.buckets import HistogramProfile
 
 from packaging.version import parse
 from pydantic import Field, field_validator, model_validator
@@ -75,6 +78,11 @@ class ObservabilityConfig:
     If set, vllm EngineCore will log iteration details
     This includes number of context/generation requests and tokens
     and the elapsed cpu time for the iteration."""
+
+    histogram_profile: "HistogramProfile" = "standard"
+    """Histogram bucket profile for Prometheus metrics. Controls the bucket
+    boundaries used for latency and count histograms. Available profiles:
+    'standard' (default)."""
 
     @cached_property
     def collect_model_forward_time(self) -> bool:

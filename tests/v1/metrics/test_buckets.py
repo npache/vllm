@@ -5,12 +5,14 @@
 import pytest
 
 from vllm.v1.metrics.buckets import (
+    BUCKET_PROFILES,
     DEFAULT_BUCKETS,
     METRIC_BUCKET_MAPPING,
     BucketType,
     build_1_2_5_buckets,
     build_buckets,
     get_buckets,
+    get_profile_buckets,
 )
 
 pytestmark = pytest.mark.cpu_test
@@ -233,3 +235,36 @@ class TestMetricBucketMapping:
             assert metric_name in METRIC_BUCKET_MAPPING, (
                 f"{metric_name} missing from METRIC_BUCKET_MAPPING"
             )
+
+
+class TestBucketProfiles:
+    """Tests for histogram bucket profiles."""
+
+    def test_get_profile_buckets_standard(self):
+        """Test that standard profile returns default buckets."""
+        profile_buckets = get_profile_buckets("standard")
+        assert profile_buckets == DEFAULT_BUCKETS
+
+    def test_get_profile_buckets_default_is_standard(self):
+        """Test that default profile is standard."""
+        profile_buckets = get_profile_buckets()
+        assert profile_buckets == DEFAULT_BUCKETS
+
+    def test_get_profile_buckets_invalid_profile(self):
+        """Test that invalid profile raises ValueError."""
+        with pytest.raises(ValueError, match="Unknown histogram profile"):
+            get_profile_buckets("nonexistent")
+
+    def test_bucket_profiles_dict_has_standard(self):
+        """Test that BUCKET_PROFILES contains standard profile."""
+        assert "standard" in BUCKET_PROFILES
+        assert BUCKET_PROFILES["standard"] == DEFAULT_BUCKETS
+
+    def test_all_profiles_have_all_static_bucket_types(self):
+        """Verify all profiles define all static bucket types."""
+        static_types = [bt for bt in BucketType if bt != BucketType.REQUEST_TOKEN_COUNT]
+        for profile_name, buckets in BUCKET_PROFILES.items():
+            for bucket_type in static_types:
+                assert bucket_type in buckets, (
+                    f"Profile '{profile_name}' missing bucket type {bucket_type.value}"
+                )
