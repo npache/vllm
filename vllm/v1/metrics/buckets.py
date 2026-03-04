@@ -288,8 +288,7 @@ METRIC_BUCKET_MAPPING: dict[str, BucketType] = {
 }
 
 
-# Low-latency profile: Finer granularity at sub-100ms levels for real-time apps
-# Optimized for chatbots, streaming, and interactive applications
+# Low-latency profile: Finer granularity at sub-100ms
 LOW_LATENCY_BUCKETS: dict[BucketType, tuple[float, ...]] = {
     # Finer granularity in 5-100ms range for fast token generation
     BucketType.TOKEN_STEP_LATENCY: (
@@ -311,7 +310,7 @@ LOW_LATENCY_BUCKETS: dict[BucketType, tuple[float, ...]] = {
         2.0,
         5.0,
     ),
-    # Very fine sub-100ms granularity for TTFT
+    # Very fine sub-100ms granularity
     BucketType.PREFILL_LATENCY: (
         0.001,
         0.002,
@@ -359,7 +358,6 @@ LOW_LATENCY_BUCKETS: dict[BucketType, tuple[float, ...]] = {
 }
 
 # High-throughput profile: Coarser buckets, higher upper bounds
-# Optimized for batch inference with many concurrent requests
 HIGH_THROUGHPUT_BUCKETS: dict[BucketType, tuple[float, ...]] = {
     # Coarser granularity, higher upper bound
     BucketType.TOKEN_STEP_LATENCY: (
@@ -430,9 +428,8 @@ HIGH_THROUGHPUT_BUCKETS: dict[BucketType, tuple[float, ...]] = {
 }
 
 # Batch profile: Very high latency tolerances for offline processing
-# Optimized for offline batch jobs where latency is not critical
 BATCH_BUCKETS: dict[BucketType, tuple[float, ...]] = {
-    # Very coarse, focused on completion not latency
+    # Very coarse
     BucketType.TOKEN_STEP_LATENCY: (
         0.1,
         0.5,

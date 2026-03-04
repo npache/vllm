@@ -83,8 +83,8 @@ class ObservabilityConfig:
     """Histogram bucket profile for Prometheus metrics. Controls the bucket
     boundaries used for latency and count histograms. Available profiles:
     'standard' (default) - balanced profile for general use cases.
-    'low-latency' - finer granularity at sub-100ms for real-time apps.
-    'high-throughput' - coarser buckets, higher bounds for batch inference.
+    'low-latency' - finer granularity at sub-100ms.
+    'high-throughput' - coarser buckets, higher bounds.
     'batch' - very high latency tolerances for offline processing."""
 
     @cached_property
