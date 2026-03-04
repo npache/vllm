@@ -5,7 +5,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 if TYPE_CHECKING:
-    from vllm.v1.metrics.buckets import HistogramProfile
+    from vllm.v1.metrics.buckets import BucketType, HistogramProfile
 
 from packaging.version import parse
 from pydantic import Field, field_validator, model_validator
@@ -86,6 +86,27 @@ class ObservabilityConfig:
     'low-latency' - finer granularity at sub-100ms.
     'high-throughput' - coarser buckets, higher bounds.
     'batch' - very high latency tolerances for offline processing."""
+
+    histogram_profile_custom: dict[str, list[float]] | None = None
+    """Custom histogram bucket overrides as JSON. Overrides specific bucket
+    types in the selected profile. Example:
+    '{"token_step_latency": [0.01, 0.05, 0.1, 0.5, 1.0]}'
+    Valid bucket types: token_step_latency, prefill_latency,
+    accumulated_phase_latency, cache_residency, batch_size, completion_count."""
+
+    @cached_property
+    def resolved_histogram_buckets(self) -> dict["BucketType", tuple[float, ...]]:
+        """Get final resolved buckets (profile + custom overrides)."""
+        from vllm.v1.metrics.buckets import (
+            merge_custom_buckets,
+            validate_custom_buckets,
+        )
+
+        custom_overrides = None
+        if self.histogram_profile_custom:
+            custom_overrides = validate_custom_buckets(self.histogram_profile_custom)
+
+        return merge_custom_buckets(self.histogram_profile, custom_overrides)
 
     @cached_property
     def collect_model_forward_time(self) -> bool:

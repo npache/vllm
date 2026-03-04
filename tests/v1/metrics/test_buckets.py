@@ -13,6 +13,8 @@ from vllm.v1.metrics.buckets import (
     build_buckets,
     get_buckets,
     get_profile_buckets,
+    merge_custom_buckets,
+    validate_custom_buckets,
 )
 
 pytestmark = pytest.mark.cpu_test
@@ -238,7 +240,7 @@ class TestMetricBucketMapping:
 
 
 class TestBucketProfiles:
-    """Tests for histogram bucket profiles."""
+    """TestTestCustomBucketss for histogram bucket profiles."""
 
     def test_get_profile_buckets_standard(self):
         """Test that standard profile returns default buckets."""
@@ -297,3 +299,60 @@ class TestBucketProfiles:
                 assert all(v > 0 for v in values), (
                     f"'{profile_name}' {bucket_type.value} has non-positive values"
                 )
+
+
+class TestCustomBuckets:
+    """Tests for custom bucket validation and merging."""
+
+    def test_validate_custom_buckets_valid(self):
+        """Test validation of valid custom buckets."""
+        custom = {"token_step_latency": [0.01, 0.05, 0.1, 0.5, 1.0]}
+        result = validate_custom_buckets(custom)
+        assert BucketType.TOKEN_STEP_LATENCY in result
+        assert result[BucketType.TOKEN_STEP_LATENCY] == (0.01, 0.05, 0.1, 0.5, 1.0)
+
+    def test_validate_custom_buckets_invalid_type(self):
+        """Test validation rejects invalid bucket type."""
+        custom = {"invalid_type": [0.1, 0.5, 1.0]}
+        with pytest.raises(ValueError, match="Invalid bucket type"):
+            validate_custom_buckets(custom)
+
+    def test_validate_custom_buckets_empty_values(self):
+        """Test validation rejects empty bucket values."""
+        custom: dict[str, list[float]] = {"token_step_latency": []}
+        with pytest.raises(ValueError, match="cannot be empty"):
+            validate_custom_buckets(custom)
+
+    def test_validate_custom_buckets_non_positive(self):
+        """Test validation rejects non-positive values."""
+        custom = {"token_step_latency": [0.0, 0.1, 0.5]}
+        with pytest.raises(ValueError, match="must be positive"):
+            validate_custom_buckets(custom)
+
+    def test_validate_custom_buckets_not_sorted(self):
+        """Test validation rejects unsorted values."""
+        custom = {"token_step_latency": [0.5, 0.1, 1.0]}
+        with pytest.raises(ValueError, match="must be sorted"):
+            validate_custom_buckets(custom)
+
+    def test_merge_custom_buckets_no_overrides(self):
+        """Test merge without overrides returns base profile."""
+        result = merge_custom_buckets("standard", None)
+        assert result == DEFAULT_BUCKETS
+
+    def test_merge_custom_buckets_with_overrides(self):
+        """Test merge applies overrides to base profile."""
+        custom = {BucketType.TOKEN_STEP_LATENCY: (0.01, 0.1, 1.0)}
+        result = merge_custom_buckets("standard", custom)
+        assert result[BucketType.TOKEN_STEP_LATENCY] == (0.01, 0.1, 1.0)
+        # Other bucket types should remain from base profile
+        assert (
+            result[BucketType.PREFILL_LATENCY]
+            == DEFAULT_BUCKETS[BucketType.PREFILL_LATENCY]
+        )
+
+    def test_merge_custom_buckets_different_profile(self):
+        """Test merge with different base profile."""
+        custom = {BucketType.TOKEN_STEP_LATENCY: (0.01, 0.1, 1.0)}
+        result = merge_custom_buckets("low-latency", custom)
+        assert result[BucketType.TOKEN_STEP_LATENCY] == (0.01, 0.1, 1.0)
