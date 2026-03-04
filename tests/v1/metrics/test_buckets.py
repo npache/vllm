@@ -240,7 +240,7 @@ class TestMetricBucketMapping:
 
 
 class TestBucketProfiles:
-    """Tests for histogram bucket profiles."""
+    """TestTestCustomBucketss for histogram bucket profiles."""
 
     def test_get_profile_buckets_standard(self):
         """Test that standard profile returns default buckets."""
@@ -302,7 +302,7 @@ class TestBucketProfiles:
 
 
 class TestCustomBuckets:
-    """Tests for custom bucket validation and merging (PR 4)."""
+    """Tests for custom bucket validation and merging."""
 
     def test_validate_custom_buckets_valid(self):
         """Test validation of valid custom buckets."""
