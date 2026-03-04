@@ -268,3 +268,32 @@ class TestBucketProfiles:
                 assert bucket_type in buckets, (
                     f"Profile '{profile_name}' missing bucket type {bucket_type.value}"
                 )
+
+    def test_all_expected_profiles_exist(self):
+        """Verify all expected profiles are defined."""
+        expected_profiles = ["standard", "low-latency", "high-throughput", "batch"]
+        for profile in expected_profiles:
+            assert profile in BUCKET_PROFILES, f"Profile '{profile}' not found"
+
+    def test_get_profile_buckets_all_profiles(self):
+        """Test that all profiles can be retrieved."""
+        for profile in ["standard", "low-latency", "high-throughput", "batch"]:
+            buckets = get_profile_buckets(profile)
+            assert isinstance(buckets, dict)
+            assert len(buckets) > 0
+
+    def test_profile_buckets_are_sorted(self):
+        """Verify all profile bucket values are sorted."""
+        for profile_name, buckets in BUCKET_PROFILES.items():
+            for bucket_type, values in buckets.items():
+                assert values == tuple(sorted(values)), (
+                    f"Profile '{profile_name}' {bucket_type.value} buckets not sorted"
+                )
+
+    def test_profile_buckets_are_positive(self):
+        """Verify all profile bucket values are positive."""
+        for profile_name, buckets in BUCKET_PROFILES.items():
+            for bucket_type, values in buckets.items():
+                assert all(v > 0 for v in values), (
+                    f"'{profile_name}' {bucket_type.value} has non-positive values"
+                )
