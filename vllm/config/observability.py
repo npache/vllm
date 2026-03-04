@@ -82,7 +82,7 @@ class ObservabilityConfig:
     histogram_profile: "HistogramProfile" = "standard"
     """Histogram bucket profile for Prometheus metrics. Controls the bucket
     boundaries used for latency and count histograms. Available profiles:
-    'standard' (default) - balanced profile for general use cases."""
+    'standard' (default)."""
 
     @cached_property
     def collect_model_forward_time(self) -> bool:

@@ -238,7 +238,7 @@ class TestMetricBucketMapping:
 
 
 class TestBucketProfiles:
-    """Tests for histogram bucket profiles (PR 2)."""
+    """Tests for histogram bucket profiles."""
 
     def test_get_profile_buckets_standard(self):
         """Test that standard profile returns default buckets."""

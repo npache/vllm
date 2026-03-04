@@ -11,7 +11,6 @@ of measurements.
 from enum import Enum
 from typing import Literal
 
-# Type alias for histogram profile names
 HistogramProfile = Literal["standard"]
 
 
